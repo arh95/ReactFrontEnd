@@ -1,7 +1,4 @@
-//intent here is to make a simple yes/no modal for use when choosing to end a game
 
-//will need an action to run on success, can be provided by parent
-//for specific case of Quit Game, should provide 
 
 import React, { useState, setState } from 'react';
 import './confirmModal.css'
@@ -18,8 +15,7 @@ export default function NumberInputModal ({acceptAction, acceptLabel="Yes", decl
         console.log(event);
         let inputValue = event.target.value;
         //have to perform type conversion, because even when input type is set to number, the value stored within is of type string,
-
-        //which causes issues on the server side becuase ID value needs to be an int
+        //which causes issues on the server side becuase ID value needs to be an number
         setInputValue(parseInt(inputValue));
         setSubmitDisabled(inputValue.length <= 0);
     }
