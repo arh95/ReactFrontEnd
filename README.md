@@ -1,7 +1,7 @@
 This front end is currently accessible at http://stormy-sierra-42002-d9e5225323a3.herokuapp.com/ <br/>
 However, it is important to note that due to timeline restrictions on domain acquisition and ssl installation on the backend, the app can currently ONLY be accessible using the http protocol.<br/> I reccomend accessing the site through Firefox, with https-only mode disabled (https://support.mozilla.org/en-US/kb/https-only-prefs)
 <br/><br/>
-Chess visualization library used: react-chessboard (https://www.npmjs.com/package/react-chessboard)
+Chess visualization library used: react-chessboard (https://www.npmjs.com/package/react-chessboard)<br/>
 Chess logic library used: chess.js (https://github.com/jhlywa/chess.js/blob/master/README.md)
 
 
