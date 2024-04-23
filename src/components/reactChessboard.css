@@ -1,0 +1,18 @@
+.react-chessboard {
+    display: flex;
+    max-height: 600px;
+    align-self: center;
+
+    .button-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        margin-left: 20px;
+        
+    }
+
+    .game-area  {
+        display: flex;
+        flex-direction: column;
+    }
+}

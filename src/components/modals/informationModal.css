@@ -1,0 +1,10 @@
+.close-button-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+.info-modal {
+    max-height: 150px;
+}
+
+

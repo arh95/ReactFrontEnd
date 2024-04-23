@@ -1,0 +1,7 @@
+.button-wrapper {
+    border-radius: 4px;
+    border-color: black;
+    border-style: solid;
+    cursor: pointer;
+    padding: 5px;
+}
