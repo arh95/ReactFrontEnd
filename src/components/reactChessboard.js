@@ -9,12 +9,6 @@ import NumberInputModal from './modals/numberInputModal.js';
 const { Chess } = require('chess.js');
 
 
-//todo
-
-//figure out how to use game.move, how to check provided values on a move
-//investigate further onmove properties
-//plan out front end rest calls
-
 export default function ReactChessboard() {
 
   const WHITE = "white";
@@ -206,11 +200,6 @@ export default function ReactChessboard() {
   function quitGame() {
     sendEndGameRequest(true);
   }
-  function endGame() {
-    //todo: call from within some handler function attached to the chessboard to evaluate if checkmate/statelmate/game end has been reached
-    sendEndGameRequest(false);
-  }
-
   function updateControlButtonVisibility(gameIsLive) {
 
     setInitGameButtonsVisible(!gameIsLive);
@@ -290,6 +279,7 @@ export default function ReactChessboard() {
     console.log(moves);
 
     //todo: implement logic surrounding castling
+    //todo: fix piece promotion, styling of the board seems to prevent it from occurring
 
     try {
       console.log("fen before move:" + game.fen())
