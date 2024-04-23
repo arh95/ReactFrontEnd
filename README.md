@@ -1,3 +1,11 @@
+This front end is currently accessible at http://stormy-sierra-42002-d9e5225323a3.herokuapp.com/ 
+However, it is important to note that due to timeline restrictions on domain acquisition and ssl installation on the backend, the app can currently ONLY be accessible using the http protocol. I reccomend accessing the site through Firefox, with https-only mode disabled https://support.mozilla.org/en-US/kb/https-only-prefs
+
+
+
+
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
