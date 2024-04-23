@@ -185,8 +185,7 @@ export default function ReactChessboard() {
       .then((data) => {
         console.log("Game ended successfully");
         //should only need to handle quitting in this method, 
-        if (isQuit)
-        {       
+        if (isQuit) {
           setInfoModalText(data.EndingPlayer === playerColor.current ? currentPlayerEndedText.current : otherPlayedEndedText.current);
           setShowInfoModal(true);
           handleBoardReset();
@@ -198,8 +197,7 @@ export default function ReactChessboard() {
       });
   }
 
-  function endSpectate()
-  {
+  function endSpectate() {
     setEndSpectateButtonVisible(false);
     isSpectating.current = false;
     handleBoardReset();
@@ -213,7 +211,7 @@ export default function ReactChessboard() {
     sendEndGameRequest(false);
   }
 
-function updateControlButtonVisibility(gameIsLive) {
+  function updateControlButtonVisibility(gameIsLive) {
 
     setInitGameButtonsVisible(!gameIsLive);
     if (isSpectating.current) {
@@ -238,8 +236,7 @@ function updateControlButtonVisibility(gameIsLive) {
       //and add one additional REST call for board state fetch 
       console.log(response);
 
-      if (!response instanceof String && !response.IsGameLive)
-      {
+      if (!response instanceof String && !response.IsGameLive) {
         //while polling for opponent, call updateBoardSTate if the game has been ended to alert the current player as to why the game has ended
         // updateBoardState(response.PGN);
       }
@@ -258,7 +255,7 @@ function updateControlButtonVisibility(gameIsLive) {
       console.log("Waiting for next move...");
       //only ever want to update the board state IFF
       //the game record has not yet been deleted, the game is still currently live, AND the current user is still spectating
-      if (response !== "Game Not Found" && response.IsGameLive && isSpectating.current) {
+      if (!response !== "Game Not Found" && response.IsGameLive && isSpectating.current) {
         updateBoardState(response.PGN);
       }
       else {
@@ -269,8 +266,7 @@ function updateControlButtonVisibility(gameIsLive) {
         else if (!response.IsGameLive) {
           setInfoModalText(gameToSpectateHasEnded.current);
         }
-        if (isSpectating.current)
-        {
+        if (isSpectating.current) {
           //if user is no longer spectating, do not show user updates 
           setShowInfoModal(true);
         }
@@ -301,13 +297,12 @@ function updateControlButtonVisibility(gameIsLive) {
       if (attemptedMove !== null) {
         setGamePosition(game.fen());
         setGame(game);
-        if (game.isGameOver())
-        {
+        if (game.isGameOver()) {
           let gameCopy = new Chess();
           gameCopy.loadPgn(game.pgn());
           handleBoardReset();
           handleGameOver(gameCopy);
-          
+
         }
         console.log("fen after move: " + game.fen());
         postMoveToServer(!game.isGameOver());
@@ -327,56 +322,50 @@ function updateControlButtonVisibility(gameIsLive) {
     setGame(gameCopy);
     console.log("inCheck: " + gameCopy.inCheck());
     console.log("inCheckmate:" + gameCopy.isCheckmate());
-  
-    if (gameCopy.isGameOver()) {
-      handleGameOver(gameCopy);
-      //because we can't rely on 
-    } else if (gameCopy.isCheck()) {
-      setInfoModalText("You are in check");
-      setShowInfoModal(true);
+    if (!isSpectating.current) {
+
+
+      if (gameCopy.isGameOver()) {
+        handleGameOver(gameCopy);
+      } else if (gameCopy.isCheck()) {
+        setInfoModalText("You are in check");
+        setShowInfoModal(true);
+      }
     }
   }
 
 
 
   //alerts the player who is receiving the turn to the reason the game has ended, 
-  function handleGameOver(chessGame)
-  {
-  
-      if (chessGame.isDraw())
-      {
-        let drawText = "The game has ended in a draw./n";
-        if (chessGame.isInsufficientMaterial())
-        {
-          drawText += "Neither player has sufficient material to continue.";
-        }
-        else {
-          drawText += "The 50 move rule has been exceeded";
-        }
-        setInfoModalText(drawText);
-     
+  function handleGameOver(chessGame) {
+    if (chessGame.isDraw()) {
+      let drawText = "The game has ended in a draw./n";
+      if (chessGame.isInsufficientMaterial()) {
+        drawText += "Neither player has sufficient material to continue.";
       }
-      else if (chessGame.isStalemate())
-      {
-        setInfoModalText("This game has ended in a stalemate.");
+      else {
+        drawText += "The 50 move rule has been exceeded";
       }
-      else if (chessGame.isThreefoldRepetition())
-      {
-        setInfoModalText("This game has ended because this board position has been repeated too many times.");
+      setInfoModalText(drawText);
+
+    }
+    else if (chessGame.isStalemate()) {
+      setInfoModalText("This game has ended in a stalemate.");
+    }
+    else if (chessGame.isThreefoldRepetition()) {
+      setInfoModalText("This game has ended because this board position has been repeated too many times.");
+    }
+    else if (chessGame.isCheckmate()) {
+      //this method operates at a step ahead. of the move that was just made. If the current player took a move that caused checkmate
+      //the turn() method would return the next player's color, because it is *technically* their turn
+      if (chessGame.turn() === playerColor.current[0]) {
+        setInfoModalText("You have lost. Checkmate");
+      } else {
+        setInfoModalText("You have won!")
       }
-      else if (chessGame.isCheckmate())
-      {
-        //this method operates at a step ahead. of the move that was just made. If the current player took a move that caused checkmate
-        //the turn() method would return the next player's color, because it is *technically* their turn
-        if (chessGame.turn() === playerColor.current[0])
-        {
-          setInfoModalText("You have lost. Checkmate");
-        } else {
-          setInfoModalText("You have won!")
-        }
-      }
-      setShowInfoModal(true);
-      handleBoardReset();
+    }
+    setShowInfoModal(true);
+    handleBoardReset();
   }
 
   async function handleFetchBoardStateResponse(response) {
@@ -456,7 +445,6 @@ function updateControlButtonVisibility(gameIsLive) {
     return piece.piece[0] === playerColor.current[0];
   }
 
-
   function onPieceDragBegin(piece, sourceSquare) {
     console.log("Current Game State: " + game.fen());
     console.log(game.moves());
@@ -470,7 +458,6 @@ function updateControlButtonVisibility(gameIsLive) {
     setShowJoinGameModal(false);
     setShowSpectateGameModal(false);
   }
-
 
   function promptUserToJoin() {
     setShowJoinGameModal(true);
