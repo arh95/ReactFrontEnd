@@ -93,6 +93,12 @@ export default function ReactChessboard() {
       setShowInfoModal(true);
       handleBoardReset();
     }
+    else if (response.status === 409)
+    {
+      setInfoModalText(data);
+      setShowInfoModal(true);
+      handleBoardReset();
+    }
     else {
       console.log("ERROR " + response.statusText);
       showSomethingIsWrongModal();
@@ -131,8 +137,8 @@ export default function ReactChessboard() {
   }
 
   function handleBoardReset() {
-    setGame(new Chess());
     console.log("resetting board");
+    setGame(new Chess());
     setDragEnabled(false);
     setBoardPosition("");
     setGamePosition("");
@@ -143,7 +149,6 @@ export default function ReactChessboard() {
   }
 
   async function joinGame() {
-
     setDragEnabled(false);
     console.log("attempting game join");
     let response = await fetch(getServerPath() + '/live/' + boardId.current, {
@@ -231,10 +236,16 @@ function updateControlButtonVisibility(gameIsLive) {
     const compareTurn = (response) => {
 
       //should restructure, when we poll we receive the information that we need to operate on anyway, no need to duplicate the call
-      //and add one additional REST call for board state fetch
+      //and add one additional REST call for board state fetch 
       console.log(response);
+
+      if (!response instanceof String && !response.IsGameLive)
+      {
+        //while polling for opponent, call updateBoardSTate if the game has been ended to alert the current player as to why the game has ended
+        updateBoardState(response.PGN);
+      }
       //stop the poll for opponent moves if the game has ended, OR if it becomes the current player's turn once again
-      return response.IsGameLive && ((response === "Game Not Found") || (response.CurrentTurn.localeCompare(playerColor.current[0]) !== 0));
+      return response.IsGameLive && ((response instanceof String) || (response.CurrentTurn.localeCompare(playerColor.current[0]) !== 0));
     }
     await poll(fetchTurn, compareTurn, 1000);
     //once the poll has completed, then we can fetch the board position
@@ -289,11 +300,19 @@ function updateControlButtonVisibility(gameIsLive) {
       if (attemptedMove !== null) {
         setGamePosition(game.fen());
         setGame(game);
-        // let sourcePiece = game.remove(sourceSquare);
-        // let putResult = game.put(piece, targetSquare);
-
+        if (game.isGameOver())
+        {
+          if (game.isCheckmate())
+          {
+            setInfoModalText("You have won!");
+            setShowInfoModal(true);
+          } else 
+          {
+            handleGameOver(game);
+          }
+        }
         console.log("fen after move: " + game.fen());
-        postMoveToServer();
+        postMoveToServer(!game.isGameOver());
       }
       return true;
     } catch (e) {
@@ -311,11 +330,48 @@ function updateControlButtonVisibility(gameIsLive) {
     console.log("inCheck: " + gameCopy.inCheck());
     console.log("inCheckmate:" + gameCopy.isCheckmate());
   
-    if (gameCopy.isCheck())
-    {
+    if (gameCopy.isGameOver()) {
+      handleGameOver(gameCopy);
+      //because we can't rely on 
+    } else if (gameCopy.isCheck() && gameCopy.turn() === playerColor[0]) {
       setInfoModalText("You are in check");
       setShowInfoModal(true);
     }
+  }
+
+  //known bug: inconsisent cache clearing on different game end situations can make 
+
+
+  //alerts the player who is receiving the turn to the reason the game has ended, 
+  function handleGameOver(chessGame)
+  {
+  
+      if (chessGame.isDraw())
+      {
+        let drawText = "The game has ended in a draw./n";
+        if (chessGame.isInsufficientMaterial())
+        {
+          drawText += "Neither player has sufficient material to continue.";
+        }
+        else {
+          drawText += "The 50 move rule has been exceeded";
+        }
+        setInfoModalText(drawText);
+     
+      }
+      else if (chessGame.isStalemate())
+      {
+        setInfoModalText("This game has ended in a stalemate.");
+      }
+      else if (chessGame.isThreefoldRepetition())
+      {
+        setInfoModalText("This game has ended because this board position has been repeated too many times.");
+      }
+      else if (chessGame.isCheckmate())
+      {
+        setInfoModalText("You have lost. Checkmate");
+      }
+      setShowInfoModal(true);
   }
 
   async function handleFetchBoardStateResponse(response) {
@@ -335,6 +391,12 @@ function updateControlButtonVisibility(gameIsLive) {
       setShowInfoModal(true);
       handleBoardReset();
     }
+    else if (response.status === 409)
+    {
+      setInfoModalText(data);
+      setShowInfoModal(true);
+      handleBoardReset();
+    }
     else {
       showSomethingIsWrongModal();
     }
@@ -347,8 +409,8 @@ function updateControlButtonVisibility(gameIsLive) {
     handleFetchBoardStateResponse(response);
   }
 
-  function postMoveToServer() {
-    let postBody = createChessGameObject(true);
+  function postMoveToServer(isGameLive) {
+    let postBody = createChessGameObject(isGameLive);
 
     fetch(getServerPath() + '/live/' + boardId.current, {
       method: 'POST',
