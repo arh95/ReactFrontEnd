@@ -1,5 +1,5 @@
 This front end is currently accessible at http://stormy-sierra-42002-d9e5225323a3.herokuapp.com/ <br/>
-However, it is important to note that due to timeline restrictions on domain acquisition and ssl installation on the backend, the app can currently ONLY be accessible using the http protocol.<br/> **I reccomend accessing the site through Firefox, with https-only mode disabled (https://support.mozilla.org/en-US/kb/https-only-prefs)** 
+Unfortuantely, I am still waiting on my domain to be created so I can install SSL, so the app can currently ONLY be accessible using the http protocol.<br/> **I reccomend accessing the site through Firefox, with https-only mode disabled (https://support.mozilla.org/en-US/kb/https-only-prefs)** 
 <br/><br/>
 Otherwise, this app can be run locally by compiling and running the front end using **npm run build** and **npm start**, and the backend GOLANG server(https://github.com/arh95/GolangChessServer/tree/master) can be compiled with **go build** and **go run .** in the server's root directory.<br/> Once the app is running locally, you can access it using different tabs in the same browser, or in different windows altogether. Dealer's choice
 <br/><br/>
