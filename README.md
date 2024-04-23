@@ -6,6 +6,8 @@ Otherwise, this app can be run locally by compiling and running the front end us
 Chess visualization library used: react-chessboard (https://www.npmjs.com/package/react-chessboard)<br/>
 Chess logic library used: chess.js (https://github.com/jhlywa/chess.js/blob/master/README.md)
 
+### TODOS
+
 
 
 
