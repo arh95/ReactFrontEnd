@@ -7,6 +7,10 @@ Chess visualization library used: react-chessboard (https://www.npmjs.com/packag
 Chess logic library used: chess.js (https://github.com/jhlywa/chess.js/blob/master/README.md)
 
 ### TODOS
+- Modal Styling
+- Mobile Responsiveness
+- Material Design
+- Highlighting opponent moves, removing "You are in check" alert
 
 
 
