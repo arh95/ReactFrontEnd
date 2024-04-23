@@ -337,7 +337,6 @@ function updateControlButtonVisibility(gameIsLive) {
     }
   }
 
-  //known bug: inconsisent cache clearing on different game end situations can make 
 
 
   //alerts the player who is receiving the turn to the reason the game has ended, 
@@ -392,8 +391,8 @@ function updateControlButtonVisibility(gameIsLive) {
       //in this method, a response of 404 indicates that the ID we are providing to the GET GET/live/:id endpoint
       //no longer exists in the database. Therefore, we can assume (Barring any malicious actors) that the game has been ended by the other user
       setInfoModalText(otherPlayedEndedText.current);
-      //BUG: sometimes this poll response occurs before the endGame response, so the ending user is shown a message that the other
-      //user has ended the game
+      //Known Bug: sometimes this poll response occurs before the endGame response, so the ending user is shown a message that the other
+      //user has ended the game. T
       setShowInfoModal(true);
       handleBoardReset();
     }
