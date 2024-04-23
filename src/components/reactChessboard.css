@@ -2,6 +2,10 @@
     display: flex;
     max-height: 600px;
     align-self: center;
+    @media only screen and (max-width: 800px) {
+        justify-content: center;
+        flex-direction: column;
+      }
 
     .button-container {
         display: flex;

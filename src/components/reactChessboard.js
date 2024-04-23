@@ -25,8 +25,6 @@ export default function ReactChessboard() {
   const WHITE = "white";
   const BLACK = "black";
 
-
-
   //todo: shift things that are not rendered into just variables
 
   //setting up constants & utilizing useState hook to reflect the state in order to get the board to properly update when the state changes
@@ -34,6 +32,7 @@ export default function ReactChessboard() {
   const [dragEnabled, setDragEnabled] = useState(true);
   const [game, setGame] = useState(new Chess());
   const [endGameButtonVisible, setEndGameButtonVisible] = useState(false);
+  const [endSpectateButtonVisible, setEndSpectateButtonVisible] = useState(false);
   const [initGameButtonsVisible, setInitGameButtonsVisible] = useState(true);
   const [playerPromptText, setPlayerPromptText] = useState("");
   const [boardPosition, setBoardPosition] = useState(WHITE);
@@ -78,7 +77,9 @@ export default function ReactChessboard() {
   }
 
   async function spectateGame() {
-
+    setEndSpectateButtonVisible(true);
+    setInitGameButtonsVisible(false);
+    setEndGameButtonVisible(false);
     setDragEnabled(false);
     console.log("attempting game spectate");
     let response = await fetch(getServerPath() + '/live/' + boardId.current, {
@@ -150,6 +151,7 @@ export default function ReactChessboard() {
     setPlayerPromptText("");
     isSpectating.current = false;
     updateControlButtonVisibility(false);
+    setEndSpectateButtonVisible(false);
   }
 
 
@@ -207,6 +209,13 @@ export default function ReactChessboard() {
       });
   }
 
+  function endSpectate()
+  {
+    setEndSpectateButtonVisible(false);
+    isSpectating.current = false;
+    handleBoardReset();
+  }
+
   function quitGame() {
     sendEndGameRequest(true);
   }
@@ -253,7 +262,7 @@ export default function ReactChessboard() {
     const checkSpectate = (response) => {
 
       console.log("Waiting for next move...");
-      if (response !== "Game Not Found" && response.IsGameLive) {
+      if (response !== "Game Not Found" && response.IsGameLive && isSpectating.current) {
         updateBoardState(response.PGN);
       }
       else {
@@ -264,11 +273,15 @@ export default function ReactChessboard() {
         else if (!response.IsGameLive) {
           setInfoModalText(gameToSpectateHasEnded.current);
         }
-        setShowInfoModal(true);
+        if (isSpectating.current)
+        {
+          setShowInfoModal(true);
+        }
+        isSpectating.current = false;
       }
 
       //stop the poll for all moves if the game cannot be found or if the game ends
-      return !(!response.IsGameLive || response === "Game Not Found");
+      return !(!response.IsGameLive || response === "Game Not Found" || !isSpectating.current);
     }
     await poll(fetchTurn, checkSpectate, 1000);
     //once the poll has completed, then we can fetch the board position
@@ -454,6 +467,7 @@ export default function ReactChessboard() {
         <ReactButton id="join-game-button" visible={initGameButtonsVisible} onClick={promptUserToJoin} label="Join Game" />
         <ReactButton id="spectate-game-button" visible={initGameButtonsVisible} onClick={promptUserToSpectate} label="Spectate Game" />
         <ReactButton id="end-game-button" visible={endGameButtonVisible} onClick={quitGame} label="End Game" />
+        <ReactButton id="end-game-button" visible={endSpectateButtonVisible} onClick={endSpectate} label="Leave Spectator Mode" />
       </div>
       <div className='modal-container'>
         <InformationModal id="info-modal" isOpen={showInfoModal} modalText={infoModalText} closeAction={closeInformationModal} />
