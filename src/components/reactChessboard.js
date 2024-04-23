@@ -131,6 +131,7 @@ export default function ReactChessboard() {
   }
 
   function handleBoardReset() {
+    setGame(new Chess());
     console.log("resetting board");
     setDragEnabled(false);
     setBoardPosition("");
@@ -140,8 +141,6 @@ export default function ReactChessboard() {
     updateControlButtonVisibility(false);
     setEndSpectateButtonVisible(false);
   }
-
-
 
   async function joinGame() {
 
@@ -283,16 +282,8 @@ function updateControlButtonVisibility(gameIsLive) {
     };
     const moves = game.moves();
     console.log(moves);
-    let validMove = false;
-    for (let i = 0; i < moves.length; i++) {
-      if (moves[i] === targetSquare) {
-        validMove = true;
-        break;
-      }
-    }
-    if (!validMove) return false;
-    try {
 
+    try {
       console.log("fen before move:" + game.fen())
       var attemptedMove = game.move(move);
       if (attemptedMove !== null) {
@@ -303,7 +294,6 @@ function updateControlButtonVisibility(gameIsLive) {
 
         console.log("fen after move: " + game.fen());
         postMoveToServer();
-
       }
       return true;
     } catch (e) {
@@ -315,8 +305,17 @@ function updateControlButtonVisibility(gameIsLive) {
   function updateBoardState(PGN) {
     let gameCopy = new Chess();
     gameCopy.loadPgn(PGN);
+
     setGamePosition(gameCopy.fen());
     setGame(gameCopy);
+    console.log("inCheck: " + gameCopy.inCheck());
+    console.log("inCheckmate:" + gameCopy.isCheckmate());
+  
+    if (gameCopy.isCheck())
+    {
+      setInfoModalText("You are in check");
+      setShowInfoModal(true);
+    }
   }
 
   async function handleFetchBoardStateResponse(response) {
@@ -374,6 +373,7 @@ function updateControlButtonVisibility(gameIsLive) {
   }
 
   function handleBeginningOfTurn() {
+    console.log("beginning Turn");
     setDragEnabled(true);
     setPlayerPromptText("It's your turn!");
   }
@@ -395,12 +395,6 @@ function updateControlButtonVisibility(gameIsLive) {
     return piece.piece[0] === playerColor.current[0];
   }
 
-  function onPieceDragEnd(piece, sourceSquare) {
-  
-    // console.log("END DRAG");
-    // console.log(piece);
-    // console.log(sourceSquare);
-  }
 
   function onPieceDragBegin(piece, sourceSquare) {
     console.log("Current Game State: " + game.fen());
@@ -438,11 +432,10 @@ function updateControlButtonVisibility(gameIsLive) {
     }
   }
 
-  //todo generate identifier from backend 
   return (
     <div className='react-chessboard'>
       <div className="game-area">
-        <Chessboard id="myBoard" position={gamePosition} onPieceDragEnd={onPieceDragEnd} onPieceDragBegin={onPieceDragBegin} onPieceDrop={onPieceDrop} boardWidth="400"
+        <Chessboard id="myBoard" position={gamePosition} onPieceDragBegin={onPieceDragBegin} onPieceDrop={onPieceDrop} boardWidth="400"
           arePiecesDraggable={dragEnabled} boardOrientation={boardPosition} isDraggablePiece={isDraggablePiece} />
         <p>
           {playerPromptText}
