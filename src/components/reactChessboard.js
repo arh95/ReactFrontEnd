@@ -61,7 +61,7 @@ export default function ReactChessboard() {
         serverPath = "http://localhost";
       }
       else {
-         serverPath = "https://cors-everywhere.http://ec2-18-224-251-47.us-east-2.compute.amazonaws.com";
+         serverPath = "http://ec2-18-224-251-47.us-east-2.compute.amazonaws.com";
       }
       serverPath = serverPath + ":8080";
       return serverPath;
