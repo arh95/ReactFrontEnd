@@ -339,21 +339,16 @@ export default function ReactChessboard() {
   //alerts the player who is receiving the turn to the reason the game has ended, 
   function handleGameOver(chessGame) {
     if (chessGame.isDraw()) {
-      let drawText = "The game has ended in a draw./n";
+      let drawText = "The game has ended in a draw. ";
       if (chessGame.isInsufficientMaterial()) {
         drawText += "Neither player has sufficient material to continue.";
       }
-      else {
-        drawText += "The 50 move rule has been exceeded";
+      else if (chessGame.isThreefoldRepetition()) {
+        drawText += "This board configuration has been repeated too many times.";
+      } else if (chessGame.isStalemate()) {
+        drawText += "This is a stalemate.";
       }
       setInfoModalText(drawText);
-
-    }
-    else if (chessGame.isStalemate()) {
-      setInfoModalText("This game has ended in a stalemate.");
-    }
-    else if (chessGame.isThreefoldRepetition()) {
-      setInfoModalText("This game has ended because this board position has been repeated too many times.");
     }
     else if (chessGame.isCheckmate()) {
       //this method operates at a step ahead. of the move that was just made. If the current player took a move that caused checkmate
