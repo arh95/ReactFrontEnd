@@ -15,17 +15,10 @@ const { Chess } = require('chess.js');
 //investigate further onmove properties
 //plan out front end rest calls
 
-//todo: add new game, join game, endgame buttons
-
-// re above: research HTTP rest calls in react
-
 export default function ReactChessboard() {
 
-  //todo: find out if this use of the pipe is legal?
   const WHITE = "white";
   const BLACK = "black";
-
-  //todo: shift things that are not rendered into just variables
 
   //setting up constants & utilizing useState hook to reflect the state in order to get the board to properly update when the state changes
   const [gamePosition, setGamePosition] = useState('');
@@ -39,10 +32,7 @@ export default function ReactChessboard() {
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [infoModalText, setInfoModalText] = useState("");
   const [showJoinGameModal, setShowJoinGameModal] = useState(false);
-
   const [showSpectateGameModal, setShowSpectateGameModal] = useState(false);
-
-
 
   const boardId = useRef(0);
   const playerColor = useRef(WHITE);
@@ -89,20 +79,19 @@ export default function ReactChessboard() {
     if (response.status === 200) {
       console.log(data);
       if (data.IsGameLive) {
-        //for simplicity, players who join a game will automatically be assigned the black chess pieces 
-        updateControlButtonVisibility(true);
         setGamePosition('start');
         setDragEnabled(false);
-        console.log(data);
         pollForSpectatorView();
       }
       else {
         setInfoModalText(gameToSpectateHasEnded.current);
         setShowInfoModal(true);
+        handleBoardReset();
       }
     } else if (response.status === 404) {
       setInfoModalText(gameToJoinDoesNotExist.current);
       setShowInfoModal(true);
+      handleBoardReset();
     }
     else {
       console.log("ERROR " + response.statusText);
@@ -110,28 +99,26 @@ export default function ReactChessboard() {
     }
   }
 
-
   async function beginGame() {
 
-    console.log("init chess game");
+    console.log("init chess game attempt");
     let response = await fetch(getServerPath() + '/new', {
       method: 'GET',
     });
 
     let data = await response.json();
-    console.log(response.status);
 
     if (response.status === 200) {
       console.log(data);
       handleBeginningOfTurn();
       updateControlButtonVisibility(true);
       setGamePosition('start');
+      //Initiating player automatically set to the white pieces
       setBoardPosition(WHITE);
       boardId.current = data.ID;
       let boardIdText = `Your game's ID is ${data.ID}. Send it to a friend to have them join your game!`;
       setInfoModalText(boardIdText);
       setShowInfoModal(true);
-      console.log(boardId)
     }
     else {
       showSomethingIsWrongModal();
@@ -173,7 +160,6 @@ export default function ReactChessboard() {
         updateControlButtonVisibility(true);
         setGamePosition('start');
         setDragEnabled(false);
-        console.log(data);
         pollForOpponentResponse();
       }
       else {
@@ -199,7 +185,7 @@ export default function ReactChessboard() {
 
     }).then((response) => response.json())
       .then((data) => {
-        console.log()
+        console.log("Game ended successfully")
         setInfoModalText(data.EndingPlayer === playerColor.current ? currentPlayerEndedText.current : otherPlayedEndedText.current);
         setShowInfoModal(true);
         handleBoardReset();
@@ -224,7 +210,7 @@ export default function ReactChessboard() {
     sendEndGameRequest(false);
   }
 
-  function updateControlButtonVisibility(gameIsLive) {
+function updateControlButtonVisibility(gameIsLive) {
 
     setInitGameButtonsVisible(!gameIsLive);
     if (isSpectating.current) {
@@ -248,7 +234,6 @@ export default function ReactChessboard() {
       //should restructure, when we poll we receive the information that we need to operate on anyway, no need to duplicate the call
       //and add one additional REST call for board state fetch
       console.log(response);
-      console.log(playerColor);
       //stop the poll for opponent moves if the game has ended, OR if it becomes the current player's turn once again
       return response.IsGameLive && ((response === "Game Not Found") || (response.CurrentTurn.localeCompare(playerColor.current[0]) !== 0));
     }
@@ -262,6 +247,8 @@ export default function ReactChessboard() {
     const checkSpectate = (response) => {
 
       console.log("Waiting for next move...");
+      //only ever want to update the board state IFF
+      //the game record has not yet been deleted, the game is still currently live, AND the current user is still spectating
       if (response !== "Game Not Found" && response.IsGameLive && isSpectating.current) {
         updateBoardState(response.PGN);
       }
@@ -275,26 +262,27 @@ export default function ReactChessboard() {
         }
         if (isSpectating.current)
         {
+          //if user is no longer spectating, do not show user updates 
           setShowInfoModal(true);
         }
         isSpectating.current = false;
       }
 
-      //stop the poll for all moves if the game cannot be found or if the game ends
+      //stop the poll for all moves if the game cannot be found, if the game ends, or if the current user decides to stop spectating
       return !(!response.IsGameLive || response === "Game Not Found" || !isSpectating.current);
     }
     await poll(fetchTurn, checkSpectate, 1000);
-    //once the poll has completed, then we can fetch the board position
-
   }
 
   //returns boolean value -> true indicates piece move is allowable, false indicates it should return to its original position
   function onPieceDrop(sourceSquare, targetSquare, piece) {
 
+    console.log("Current Piece: " + piece);
     const move = {
       from: sourceSquare, to: targetSquare
     };
     const moves = game.moves();
+    console.log(moves);
     let validMove = false;
     for (let i = 0; i < moves.length; i++) {
       if (moves[i] === targetSquare) {
@@ -343,6 +331,8 @@ export default function ReactChessboard() {
       //in this method, a response of 404 indicates that the ID we are providing to the GET GET/live/:id endpoint
       //no longer exists in the database. Therefore, we can assume (Barring any malicious actors) that the game has been ended by the other user
       setInfoModalText(otherPlayedEndedText.current);
+      //BUG: sometimes this poll response occurs before the endGame response, so the ending user is shown a message that the other
+      //user has ended the game
       setShowInfoModal(true);
       handleBoardReset();
     }
@@ -371,10 +361,6 @@ export default function ReactChessboard() {
       .then((response) => response.json())
       .then((data) => {
         handleEndOfTurn();
-        //todo: in this method, if the drop was valid, then we push the data to the REST endpoint
-        // that is in charge of saving the board's state for retrieval by the other user
-
-
       })
       .catch((err) => {
         console.log("ERROR: " + err);
@@ -410,15 +396,15 @@ export default function ReactChessboard() {
   }
 
   function onPieceDragEnd(piece, sourceSquare) {
-    console.log("END DRAG");
-    console.log(piece);
-    console.log(sourceSquare);
+  
+    // console.log("END DRAG");
+    // console.log(piece);
+    // console.log(sourceSquare);
   }
 
   function onPieceDragBegin(piece, sourceSquare) {
-    console.log("BEGIN DRAG");
-    console.log(piece);
-    console.log(sourceSquare);
+    console.log("Current Game State: " + game.fen());
+    console.log(game.moves());
   }
 
   function closeInformationModal() {
