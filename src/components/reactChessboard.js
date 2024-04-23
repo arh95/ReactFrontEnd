@@ -93,12 +93,6 @@ export default function ReactChessboard() {
       setShowInfoModal(true);
       handleBoardReset();
     }
-    else if (response.status === 409)
-    {
-      setInfoModalText(data);
-      setShowInfoModal(true);
-      handleBoardReset();
-    }
     else {
       console.log("ERROR " + response.statusText);
       showSomethingIsWrongModal();
@@ -189,10 +183,15 @@ export default function ReactChessboard() {
 
     }).then((response) => response.json())
       .then((data) => {
-        console.log("Game ended successfully")
-        setInfoModalText(data.EndingPlayer === playerColor.current ? currentPlayerEndedText.current : otherPlayedEndedText.current);
-        setShowInfoModal(true);
-        handleBoardReset();
+        console.log("Game ended successfully");
+        //should only need to handle quitting in this method, 
+        if (isQuit)
+        {       
+          setInfoModalText(data.EndingPlayer === playerColor.current ? currentPlayerEndedText.current : otherPlayedEndedText.current);
+          setShowInfoModal(true);
+          handleBoardReset();
+        }
+
       })
       .catch((err) => {
         console.log(err.message);
@@ -242,7 +241,7 @@ function updateControlButtonVisibility(gameIsLive) {
       if (!response instanceof String && !response.IsGameLive)
       {
         //while polling for opponent, call updateBoardSTate if the game has been ended to alert the current player as to why the game has ended
-        updateBoardState(response.PGN);
+        // updateBoardState(response.PGN);
       }
       //stop the poll for opponent moves if the game has ended, OR if it becomes the current player's turn once again
       return response.IsGameLive && ((response instanceof String) || (response.CurrentTurn.localeCompare(playerColor.current[0]) !== 0));
@@ -294,6 +293,8 @@ function updateControlButtonVisibility(gameIsLive) {
     const moves = game.moves();
     console.log(moves);
 
+    //todo: implement logic surrounding castling
+
     try {
       console.log("fen before move:" + game.fen())
       var attemptedMove = game.move(move);
@@ -302,14 +303,11 @@ function updateControlButtonVisibility(gameIsLive) {
         setGame(game);
         if (game.isGameOver())
         {
-          if (game.isCheckmate())
-          {
-            setInfoModalText("You have won!");
-            setShowInfoModal(true);
-          } else 
-          {
-            handleGameOver(game);
-          }
+          let gameCopy = new Chess();
+          gameCopy.loadPgn(game.pgn());
+          handleBoardReset();
+          handleGameOver(gameCopy);
+          
         }
         console.log("fen after move: " + game.fen());
         postMoveToServer(!game.isGameOver());
@@ -333,7 +331,7 @@ function updateControlButtonVisibility(gameIsLive) {
     if (gameCopy.isGameOver()) {
       handleGameOver(gameCopy);
       //because we can't rely on 
-    } else if (gameCopy.isCheck() && gameCopy.turn() === playerColor[0]) {
+    } else if (gameCopy.isCheck()) {
       setInfoModalText("You are in check");
       setShowInfoModal(true);
     }
@@ -369,9 +367,17 @@ function updateControlButtonVisibility(gameIsLive) {
       }
       else if (chessGame.isCheckmate())
       {
-        setInfoModalText("You have lost. Checkmate");
+        //this method operates at a step ahead. of the move that was just made. If the current player took a move that caused checkmate
+        //the turn() method would return the next player's color, because it is *technically* their turn
+        if (chessGame.turn() === playerColor.current[0])
+        {
+          setInfoModalText("You have lost. Checkmate");
+        } else {
+          setInfoModalText("You have won!")
+        }
       }
       setShowInfoModal(true);
+      handleBoardReset();
   }
 
   async function handleFetchBoardStateResponse(response) {
@@ -379,7 +385,7 @@ function updateControlButtonVisibility(gameIsLive) {
     if (response.status === 200) {
       console.log(data);
       updateBoardState(data.PGN);
-      if (!isSpectating.current) {
+      if (!isSpectating.current && data.IsGameLive) {
         handleBeginningOfTurn();
       }
     } else if (response.status === 404) {
@@ -388,12 +394,6 @@ function updateControlButtonVisibility(gameIsLive) {
       setInfoModalText(otherPlayedEndedText.current);
       //BUG: sometimes this poll response occurs before the endGame response, so the ending user is shown a message that the other
       //user has ended the game
-      setShowInfoModal(true);
-      handleBoardReset();
-    }
-    else if (response.status === 409)
-    {
-      setInfoModalText(data);
       setShowInfoModal(true);
       handleBoardReset();
     }
