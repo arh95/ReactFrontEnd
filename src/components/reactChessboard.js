@@ -272,8 +272,9 @@ export default function ReactChessboard() {
   function onPieceDrop(sourceSquare, targetSquare, piece) {
 
     console.log("Current Piece: " + piece);
+    //automatically promote pawn to queen
     const move = {
-      from: sourceSquare, to: targetSquare
+      from: sourceSquare, to: targetSquare, promotion: 'q'
     };
     const moves = game.moves();
     console.log(moves);
@@ -475,11 +476,11 @@ export default function ReactChessboard() {
         </p>
       </div>
       <div className='button-container'>
-        <ReactButton id="new-game-button" visible={initGameButtonsVisible} onClick={beginGame} label="New Game" />
-        <ReactButton id="join-game-button" visible={initGameButtonsVisible} onClick={promptUserToJoin} label="Join Game" />
-        <ReactButton id="spectate-game-button" visible={initGameButtonsVisible} onClick={promptUserToSpectate} label="Spectate Game" />
-        <ReactButton id="end-game-button" visible={endGameButtonVisible} onClick={quitGame} label="End Game" />
-        <ReactButton id="end-game-button" visible={endSpectateButtonVisible} onClick={endSpectate} label="Leave Spectator Mode" />
+        <ReactButton id="new-game-button" visible={initGameButtonsVisible} onClick={beginGame} label="New Game" variant='outlined' />
+        <ReactButton id="join-game-button" visible={initGameButtonsVisible} onClick={promptUserToJoin} label="Join Game" variant='outlined' />
+        <ReactButton id="spectate-game-button" visible={initGameButtonsVisible} onClick={promptUserToSpectate} label="Spectate Game" variant='outlined' />
+        <ReactButton id="end-game-button" visible={endGameButtonVisible} onClick={quitGame} label="End Game" variant='contained'/>
+        <ReactButton id="end-game-button" visible={endSpectateButtonVisible} onClick={endSpectate} label="Leave Spectator Mode" variant='contained' />
       </div>
       <div className='modal-container'>
         <InformationModal id="info-modal" isOpen={showInfoModal} modalText={infoModalText} closeAction={closeInformationModal} />
