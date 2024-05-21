@@ -469,7 +469,7 @@ export default function ReactChessboard() {
   return (
     <div className='react-chessboard'>
       <div className="game-area">
-        <Chessboard id="myBoard" position={gamePosition} onPieceDragBegin={onPieceDragBegin} onPieceDrop={onPieceDrop} boardWidth="400"
+        <Chessboard id="myBoard" position={gamePosition} onPieceDragBegin={onPieceDragBegin} onPieceDrop={onPieceDrop} boardWidth="400" showPromotionDialog={false}
           arePiecesDraggable={dragEnabled} boardOrientation={boardPosition} isDraggablePiece={isDraggablePiece} />
         <p>
           {playerPromptText}
