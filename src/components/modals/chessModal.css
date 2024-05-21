@@ -1,0 +1,15 @@
+.modal-button-wrapper {
+    display: flex;
+    justify-content: space-between;
+}
+
+
+
+.ReactModalPortal > div > div {
+    width: 300px;
+    height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+

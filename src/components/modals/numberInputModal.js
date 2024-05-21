@@ -1,9 +1,11 @@
 
 
 import React, { useState, setState } from 'react';
-import './confirmModal.css'
-import Modal from 'react-modal';
+import './chessModal.css'
 
+import { Button } from '@mui/material';
+
+import Modal from 'react-modal';
 
 export default function NumberInputModal ({acceptAction, acceptLabel="Yes", declineAction, declineLabel="No", inputLabel, isOpen}) {
 
@@ -31,13 +33,13 @@ export default function NumberInputModal ({acceptAction, acceptLabel="Yes", decl
                 <input type="number" onChange={handleInputUpdate} value={inputValue}/>
      
             </label>
-            <div className='confirm-cancel-button-wrapper'>
-                <button onClick={declineAction}>
+            <div className='modal-button-wrapper'>
+                <Button onClick={declineAction}>
                     {declineLabel}
-                </button>
-                <button disabled={submitDisabled} onClick={handleSubmit}>
+                </Button>
+                <Button disabled={submitDisabled} onClick={handleSubmit} variant='contained'>
                     {acceptLabel}
-                </button>
+                </Button>
             </div>
         </Modal>
     )

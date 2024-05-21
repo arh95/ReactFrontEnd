@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import  ReactChessboard  from './components/reactChessboard';
 import './App.css';
 

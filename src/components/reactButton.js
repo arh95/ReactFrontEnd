@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import './reactButton.css'
+import  Button from '@mui/material/Button';
 
-export default function ReactButton ({onClick, label, visible}) {
+export default function ReactButton ({onClick, label, visible, variant='text'}) {
 
     return (
-        <div onClick={onClick} style={{visibility: visible ? 'visible' : 'hidden'}}  className="button-wrapper">
+        <Button onClick={onClick}  variant={variant} style={{visibility: visible ? 'visible' : 'hidden'}}  className="button-wrapper">
             {label}
-        </div>
+        </Button>
     )
 };
 
