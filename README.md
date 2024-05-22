@@ -10,11 +10,13 @@ Chess logic library used: chess.js (https://github.com/jhlywa/chess.js/blob/mast
 - Modal Styling
 - Mobile Responsiveness
 - Material Design
-- Highlighting opponent moves, removing "You are in check" alert
+- Highlighting opponent move
+- removing "You are in check" alert
 - Play against computer
 
-  ### Known Bugs
+### Known Bugs
   - Castling not fully implemented
+  - Opponent ended game modal sometimes appears for the user who ended the game
 
 
 
