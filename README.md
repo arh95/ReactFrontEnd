@@ -13,9 +13,6 @@ Chess logic library used: chess.js (https://github.com/jhlywa/chess.js/blob/mast
 - Highlighting opponent moves, removing "You are in check" alert
 - Play against computer
 
-### Known Bugs
-- pawn to queen promotion
-
 
 
 
