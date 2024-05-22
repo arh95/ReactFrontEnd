@@ -10,7 +10,7 @@ export async function poll(retrieveResponse, fnCondition, ms) {
 
   function wait(ms = 500) {
     return new Promise(resolve => {
-      console.log(`waiting ${ms} ms...`);
+      // console.log(`waiting ${ms} ms...`);
       setTimeout(resolve, ms);
     });
   }
