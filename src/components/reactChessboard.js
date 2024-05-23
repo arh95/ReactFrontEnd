@@ -14,6 +14,7 @@ export default function ReactChessboard() {
   const WHITE = "white";
   const BLACK = "black";
 
+
   //setting up constants & utilizing useState hook to reflect the state in order to get the board to properly update when the state changes
   const [gamePosition, setGamePosition] = useState('');
   const [dragEnabled, setDragEnabled] = useState(true);
@@ -27,17 +28,27 @@ export default function ReactChessboard() {
   const [infoModalText, setInfoModalText] = useState("");
   const [showJoinGameModal, setShowJoinGameModal] = useState(false);
   const [showSpectateGameModal, setShowSpectateGameModal] = useState(false);
+  const initGameButtons = [
+    <ReactButton id="new-game-button" visible={initGameButtonsVisible} onClick={beginGame} label="New Game" variant='outlined' />,
+    <ReactButton id="join-game-button" visible={initGameButtonsVisible} onClick={promptUserToJoin} label="Join Game" variant='outlined' />,
+    <ReactButton id="spectate-game-button" visible={initGameButtonsVisible} onClick={promptUserToSpectate} label="Spectate Game" variant='outlined' />
+  ];
+  const [inGameButtons, setInGameButtons] = useState(initGameButtons);
 
+  const [isQueensideCastleAvailable, setIsQueensideCastleAvailable] = useState(false);
+  const [isKingsideCastleAvailable, setIsKingsideCastleAvailable] = useState(false);
 
   const queensideRookMovedFromStart = useRef(false);
   const kingsideRookMovedFromStart = useRef(false);
   const kingMovedFromStart = useRef(false);
 
-  const startingCastlePositions = useRef([['e1', 'a1', 'h1'], ['e8', 'h8', 'a8']]);
-    //data for paths organized in spaces moving away from king
-    //this is necessary to standardize in order to properly handle queen-side castling
-    //because, when checking attack paths, the 'b' column square needs to be clear, but can be under attack for a valid castle move
-  const standardCastlingPaths = useRef([[['d1', 'c1','b1'], ['f1', 'g1']],[['d8','c8','b8'],['f8', 'g8']]]);
+  //standardizing data format of: White objects are listed before Black objects, Queenside objects listed before Kingside
+  const startingCastlePositions = useRef([['e1', 'a1', 'h1'], ['e8', 'a8', 'h8']]);
+  //data for paths organized in spaces moving away from king
+  //this is necessary to standardize in order to properly handle queen-side castling
+  //because, when checking attack paths, the 'b' column square needs to be clear, but can be under attack for a valid castle move
+  const standardCastlingPaths = useRef([[['d1', 'c1', 'b1'], ['f1', 'g1']], [['d8', 'c8', 'b8'], ['f8', 'g8']]]);
+  const castlingTargets = [['c1', 'g1'], ['c8', 'g8']];
 
   const boardId = useRef(0);
   const playerColor = useRef(WHITE);
@@ -54,13 +65,12 @@ export default function ReactChessboard() {
   const spectateGameModalText = useRef("Enter the game ID of the game you are trying to spectate below.");
 
 
-  //considering time constraints, figured a janky 'environment driven property' is better than  nothing
+  //TODO: configure more appropriate environment based properties system
   function getServerPath() {
     let serverPath = ""
     if (window.location.href.includes('localhost')) {
       serverPath = "http://localhost";
-    }
-    else {
+    } else {
       //due to not having an available domain to attach to my AWS load balancer, 
       //i was unable to set up SSL for secure resource access. NExt best thing for the purposes of 
       //this demo project was to deploy the react app on heroku which allows ssl to be disabled and allows us to access the golang
@@ -69,7 +79,53 @@ export default function ReactChessboard() {
     }
     serverPath = serverPath + ":8080";
     return serverPath;
+  }
 
+
+  function initButtons(isGameLive) {
+    let buttonComponents = [];
+    if (isGameLive) {
+      //if game is live, buttons we want are: king/queenside castle, end game IF user is playing, ELSE only display end spectate button
+      if (isSpectating.current) { 
+        buttonComponents.push(<ReactButton id="end-game-button" onClick={endSpectate} label="Leave Spectator Mode" variant='contained' />);
+      } else {
+        buttonComponents.push(
+          <div className='castling-buttons'>
+          <ReactButton id="castle-button" onClick={doCastle(true)} disabled={isQueensideCastleAvailable} label="Queenside Castle" variant='outlined' />
+            <ReactButton id="castle-button" onClick={doCastle(false)} disabled={isKingsideCastleAvailable} label="Kingside Castle" variant='outlined' />
+          </div>);
+        buttonComponents.push(<ReactButton id="end-game-button" onClick={quitGame} label="End Game" variant='contained' />);
+      }
+    } else {
+      //if game is not live, we want to display join game, new game, spectate
+      buttonComponents = initGameButtons;
+
+    }
+    setInGameButtons(buttonComponents);
+  }
+
+  //Method to perform a castling move based on a button push, if not kingside then is queenside
+  //validation if castling should occur will have already happened under handleBeginningOfTurn
+  function doCastle(isQueenside) {
+    console.log("Doing castle");
+    let playerColorIndex;
+    let piece = "";
+    if (playerColor.current === WHITE) {
+      playerColorIndex = 0;
+      piece += "w";
+    } else {
+      playerColorIndex = 1;
+      piece += "b";
+    }
+    piece += "K";
+    let castlingTarget;
+    if (isQueenside) {
+      castlingTarget = castlingTargets[playerColorIndex][0];
+    } else {
+      castlingTarget = castlingTargets[playerColorIndex][1];
+    }
+    let kingSource = startingCastlePositions.current[playerColorIndex][0];
+    attemptMovePiece(kingSource, castlingTarget, piece);
   }
 
   async function spectateGame() {
@@ -85,6 +141,7 @@ export default function ReactChessboard() {
     if (response.status === 200) {
       // console.log(data);
       if (data.IsGameLive) {
+        initButtons(true);
         setGamePosition('start');
         setDragEnabled(false);
         pollForSpectatorView();
@@ -115,6 +172,7 @@ export default function ReactChessboard() {
     let data = await response.json();
 
     if (response.status === 200) {
+      initButtons(true);
       handleBeginningOfTurn();
       updateControlButtonVisibility(true);
       setGamePosition('start');
@@ -145,6 +203,7 @@ export default function ReactChessboard() {
     isSpectating.current = false;
     updateControlButtonVisibility(false);
     setEndSpectateButtonVisible(false);
+    initButtons(false);
   }
 
   async function joinGame() {
@@ -157,6 +216,7 @@ export default function ReactChessboard() {
     if (response.status === 200) {
       // console.log(data);
       if (data.IsGameLive) {
+        initButtons(true);
         //for simplicity, players who join a game will automatically be assigned the black chess pieces 
         setBoardPosition(BLACK);
         playerColor.current = BLACK;
@@ -166,9 +226,9 @@ export default function ReactChessboard() {
         pollForOpponentResponse();
       }
       else {
-
         setInfoModalText(gameToJoinHasEnded.current);
         setShowInfoModal(true);
+
       }
     } else if (response.status === 404) {
       setInfoModalText(gameToJoinDoesNotExist.current);
@@ -234,7 +294,7 @@ export default function ReactChessboard() {
 
       //should restructure, when we poll we receive the information that we need to operate on anyway, no need to duplicate the call
       //and add one additional REST call for board state fetch 
-     //console.log(response);
+      //console.log(response);
 
       if (!response instanceof String && !response.IsGameLive) {
         //while polling for opponent, call updateBoardSTate if the game has been ended to alert the current player as to why the game has ended
@@ -280,7 +340,7 @@ export default function ReactChessboard() {
   }
 
   //returns boolean value -> true indicates piece move is allowable, false indicates it should return to its original position
-  function onPieceDrop(sourceSquare, targetSquare, piece) {
+  function attemptMovePiece(sourceSquare, targetSquare, piece) {
 
 
     const move = {
@@ -325,18 +385,20 @@ export default function ReactChessboard() {
     let gameCopy = new Chess();
     gameCopy.loadPgn(PGN);
 
+
     setGamePosition(gameCopy.fen());
     setGame(gameCopy);
     console.log("inCheck: " + gameCopy.inCheck());
     console.log("inCheckmate:" + gameCopy.isCheckmate());
     if (!isSpectating.current) {
 
-
       if (gameCopy.isGameOver()) {
         handleGameOver(gameCopy);
-      } else if (gameCopy.isCheck()) {
-        setInfoModalText("You are in check");
-        setShowInfoModal(true);
+
+        // } else if (gameCopy.isCheck()) {
+        //   setInfoModalText("You are in check");
+        //   setShowInfoModal(true);
+        // }
       }
     }
   }
@@ -427,21 +489,32 @@ export default function ReactChessboard() {
   function handleBeginningOfTurn() {
     console.log("beginning Turn");
     setDragEnabled(true);
-    setPlayerPromptText("It's your turn!");
+
+    let tempPromptText = "It's your turn! ";
+    //this is behind a turn, TODO: investigate
+    // if (game.inCheck()) {
+    //   tempPromptText += "You are in check!";
+    // }
+
+    setPlayerPromptText(tempPromptText);
     setCastlingRights();
   }
 
   function setCastlingRights() {
     let castlingLocations = playerColor.current === WHITE ? startingCastlePositions.current[0] : startingCastlePositions.current[1];
     let castlingPaths = playerColor.current === WHITE ? standardCastlingPaths.current[0] : standardCastlingPaths.current[1];
-
-    console.log(castlingPaths);
     let attackingColor = playerColor.current === WHITE ? BLACK : WHITE;
     let castlingRights = game.getCastlingRights(playerColor.current);
     let king = game.get(castlingLocations[0]);
-    let kingsideRook = game.get(castlingLocations[1]);
-    let queensideRook = game.get(castlingLocations[2]);
-    let kingMoved = kingMovedFromStart.current || king === null || king.type !== 'k';
+    let kingsideRook = game.get(castlingLocations[2]);
+    let queensideRook = game.get(castlingLocations[1]);
+    console.log(king);
+    console.log("Has King Moved? " + kingMovedFromStart.current);
+    console.log(kingsideRook);
+    console.log("Has Kingside Rook Moved? " + kingsideRookMovedFromStart.current);
+    console.log(queensideRook);
+    console.log("Has Queenside Rook Moved? " + queensideRookMovedFromStart.current);
+    let kingMoved = kingMovedFromStart.current || king === false || king.type !== 'k';
 
     if (game.inCheck() || kingMoved) {
       castlingRights.k = false;
@@ -450,67 +523,44 @@ export default function ReactChessboard() {
         kingMovedFromStart.current = true;
       }
     } else {
-      if (kingsideRookMovedFromStart.current || kingsideRook === null || kingsideRook.type !== 'r') {
+      if (kingsideRookMovedFromStart.current || kingsideRook === false || kingsideRook.type !== 'r') {
         castlingRights.k = false;
         kingsideRookMovedFromStart.current = true;
-      } else {  
-        console.log("Kingside");
+      } else {
         let clearKingsidePath = isCastlingPathClear(attackingColor, castlingPaths[1], false);
         castlingRights.k = clearKingsidePath;
       }
 
-      if (queensideRookMovedFromStart.current || queensideRook.type === null || queensideRook.type !== 'r') {
+      if (queensideRookMovedFromStart.current || queensideRook.type === false || queensideRook.type !== 'r') {
         castlingRights.q = false;
         queensideRookMovedFromStart.current = true;
       } else {
         let clearQueensidePath = isCastlingPathClear(attackingColor, castlingPaths[0], true);
         castlingRights.q = clearQueensidePath;
       }
-      
+
     }
     console.log(castlingRights);
+    setIsQueensideCastleAvailable(castlingRights.q);
+    setIsKingsideCastleAvailable(castlingRights.k);
     game.setCastlingRights(playerColor.current, castlingRights);
   }
 
-  // function isCastlingPathClear(opposingColor, path, isQueenside) {
-  //   let clearPath = true;
-  //   let castlingSide = isQueenside ? "queenside" : "kingside";
-  //   //the queenside path signifier we need is the lenght. Kingside castling path will only contain 2 squares,
-  //   //Queenside will contain 3 squares
-    
-  //   for (let i = 0; i < path.length; i++) {
-    
-  //     if (game.get(square)) {
-  //       clearPath = false;
-  //       console.log("no " + castlingSide +  " castling due to occupied square(s)");
-  //       break;
-  //     }
-  //     if (game.isAttacked(square)) {
-  //       if (isQueenside && i != path.length - 1) {
-          
-  //       } else {
-  //         clearPath = false;
-  //         console.log("no " +  castlingSide +  "castling due to squares under attack");
-  //       }
-  //     }
-  //     if (isQueenside && i != path.length - 1 && game.isAttacked(square, opposingColor))
-  //     {
-        
-  //     }
-  //   }
-  //   return clearPath;
-  // }
 
   function isCastlingPathClear(opposingColor, path) {
+    console.log("Checking path:");
+    console.log(path);
     let clearPath = true;
     for (let square of path) {
+
+      console.log("Square " + square);
       //need to shore up logic for attacking detection, think this is wrong anyway
-      console.log("Square " + JSON.stringify(game.get(square)) );
+      console.log("Piece on Square " + JSON.stringify(game.get(square)));
       console.log(square + " is false?");
 
 
       console.log(game.get(square));
-      
+
       console.log(square + " is attacked?");
       console.log(game.isAttacked(square, opposingColor));
       if (game.get(square) || game.isAttacked(square, opposingColor)) {
@@ -540,8 +590,7 @@ export default function ReactChessboard() {
   }
 
   function onPieceDragBegin(piece, sourceSquare) {
-    // console.log("Current Game State: " + game.fen());
-    // console.log(game.moves());
+    console.log("Current Game State: " + game.fen());
   }
 
   function closeInformationModal() {
@@ -574,21 +623,20 @@ export default function ReactChessboard() {
     }
   }
 
+
   return (
     <div className='react-chessboard'>
       <div className="game-area">
-        <Chessboard id="myBoard" position={gamePosition} onPieceDragBegin={onPieceDragBegin} onPieceDrop={onPieceDrop} boardWidth="400" autoPromoteToQueen={true}
+        <Chessboard id="myBoard" position={gamePosition} onPieceDragBegin={onPieceDragBegin} onPieceDrop={attemptMovePiece} boardWidth="400" autoPromoteToQueen={true}
           arePiecesDraggable={dragEnabled} boardOrientation={boardPosition} isDraggablePiece={isDraggablePiece} />
         <p>
           {playerPromptText}
         </p>
       </div>
       <div className='button-container'>
-        <ReactButton id="new-game-button" visible={initGameButtonsVisible} onClick={beginGame} label="New Game" variant='outlined' />
-        <ReactButton id="join-game-button" visible={initGameButtonsVisible} onClick={promptUserToJoin} label="Join Game" variant='outlined' />
-        <ReactButton id="spectate-game-button" visible={initGameButtonsVisible} onClick={promptUserToSpectate} label="Spectate Game" variant='outlined' />
-        <ReactButton id="end-game-button" visible={endGameButtonVisible} onClick={quitGame} label="End Game" variant='contained' />
-        <ReactButton id="end-game-button" visible={endSpectateButtonVisible} onClick={endSpectate} label="Leave Spectator Mode" variant='contained' />
+        {inGameButtons.map((cmp, i) => {
+          return (cmp);
+        })}
       </div>
       <div className='modal-container'>
         <InformationModal id="info-modal" isOpen={showInfoModal} modalText={infoModalText} closeAction={closeInformationModal} />
