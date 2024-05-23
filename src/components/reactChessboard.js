@@ -49,6 +49,7 @@ export default function ReactChessboard() {
   //because, when checking attack paths, the 'b' column square needs to be clear, but can be under attack for a valid castle move
   const standardCastlingPaths = useRef([[['d1', 'c1', 'b1'], ['f1', 'g1']], [['d8', 'c8', 'b8'], ['f8', 'g8']]]);
   const castlingTargets = [['c1', 'g1'], ['c8', 'g8']];
+  const queensideAttackableCastlingSquare = ['b1', 'b8'];
 
   const boardId = useRef(0);
   const playerColor = useRef(WHITE);
@@ -83,15 +84,19 @@ export default function ReactChessboard() {
 
 
   function initButtons(isGameLive) {
+    console.log("button init");
+    debugger;
     let buttonComponents = [];
     if (isGameLive) {
       //if game is live, buttons we want are: king/queenside castle, end game IF user is playing, ELSE only display end spectate button
-      if (isSpectating.current) { 
+      if (isSpectating.current) {
+        console.log("providing spectator controls");
         buttonComponents.push(<ReactButton id="end-game-button" onClick={endSpectate} label="Leave Spectator Mode" variant='contained' />);
       } else {
+        console.log("providing player controls");
         buttonComponents.push(
           <div className='castling-buttons'>
-          <ReactButton id="castle-button" onClick={doCastle(true)} disabled={isQueensideCastleAvailable} label="Queenside Castle" variant='outlined' />
+            <ReactButton id="castle-button" onClick={doCastle(true)} disabled={isQueensideCastleAvailable} label="Queenside Castle" variant='outlined' />
             <ReactButton id="castle-button" onClick={doCastle(false)} disabled={isKingsideCastleAvailable} label="Kingside Castle" variant='outlined' />
           </div>);
         buttonComponents.push(<ReactButton id="end-game-button" onClick={quitGame} label="End Game" variant='contained' />);
@@ -105,16 +110,15 @@ export default function ReactChessboard() {
   }
 
   //Method to perform a castling move based on a button push, if not kingside then is queenside
-  //validation if castling should occur will have already happened under handleBeginningOfTurn
+  //validation if castling should occur will have already happened under handleBeginningOfTurn, and 
+  //intention is that validation will enable/disable castling buttons as is appropriate
   function doCastle(isQueenside) {
     console.log("Doing castle");
-    let playerColorIndex;
+    let playerColorIndex = getPlayerColorIndex();
     let piece = "";
     if (playerColor.current === WHITE) {
-      playerColorIndex = 0;
       piece += "w";
     } else {
-      playerColorIndex = 1;
       piece += "b";
     }
     piece += "K";
@@ -125,6 +129,7 @@ export default function ReactChessboard() {
       castlingTarget = castlingTargets[playerColorIndex][1];
     }
     let kingSource = startingCastlePositions.current[playerColorIndex][0];
+    console.log("attempting castle move: " + kingSource + ", " + castlingTarget + ", " + piece);
     attemptMovePiece(kingSource, castlingTarget, piece);
   }
 
@@ -133,13 +138,12 @@ export default function ReactChessboard() {
     setInitGameButtonsVisible(false);
     setEndGameButtonVisible(false);
     setDragEnabled(false);
-    // console.log("attempting game spectate");
+    console.log("attempting game spectate");
     let response = await fetch(getServerPath() + '/live/' + boardId.current, {
       method: 'GET',
     })
     let data = await response.json();
     if (response.status === 200) {
-      // console.log(data);
       if (data.IsGameLive) {
         initButtons(true);
         setGamePosition('start');
@@ -157,14 +161,14 @@ export default function ReactChessboard() {
       handleBoardReset();
     }
     else {
-      // console.log("ERROR " + response.statusText);
+      console.log("ERROR " + response.statusText);
       showSomethingIsWrongModal();
     }
   }
 
   async function beginGame() {
 
-    // console.log("init chess game attempt");
+    console.log("init chess game attempt");
     let response = await fetch(getServerPath() + '/new', {
       method: 'GET',
     });
@@ -194,7 +198,7 @@ export default function ReactChessboard() {
   }
 
   function handleBoardReset() {
-    // console.log("resetting board");
+    console.log("resetting board");
     setGame(new Chess());
     setDragEnabled(false);
     setBoardPosition("");
@@ -214,7 +218,7 @@ export default function ReactChessboard() {
     })
     let data = await response.json();
     if (response.status === 200) {
-      // console.log(data);
+      console.log(data);
       if (data.IsGameLive) {
         initButtons(true);
         //for simplicity, players who join a game will automatically be assigned the black chess pieces 
@@ -353,14 +357,13 @@ export default function ReactChessboard() {
       console.log("promoting to Queen");
       move.promotion = 'q';
     }
+    
     const moves = game.moves();
-    console.log(moves);
-
-    //todo: implement logic surrounding castling
 
     try {
-      console.log("fen before move:" + game.fen())
+
       var attemptedMove = game.move(move);
+      console.log(move);
       if (attemptedMove !== null) {
         setGamePosition(game.fen());
         setGame(game);
@@ -371,7 +374,6 @@ export default function ReactChessboard() {
           handleGameOver(gameCopy);
 
         }
-        console.log("fen after move: " + game.fen());
         postMoveToServer(!game.isGameOver());
       }
       return true;
@@ -500,10 +502,15 @@ export default function ReactChessboard() {
     setCastlingRights();
   }
 
+  function getPlayerColorIndex() {
+    return playerColor.current === WHITE ? 0 : 1;
+  }
+
   function setCastlingRights() {
-    let castlingLocations = playerColor.current === WHITE ? startingCastlePositions.current[0] : startingCastlePositions.current[1];
-    let castlingPaths = playerColor.current === WHITE ? standardCastlingPaths.current[0] : standardCastlingPaths.current[1];
+    let playerColorIndex = getPlayerColorIndex();
     let attackingColor = playerColor.current === WHITE ? BLACK : WHITE;
+    let castlingLocations = startingCastlePositions.current[playerColorIndex];
+    let castlingPaths = standardCastlingPaths.current[playerColorIndex];
     let castlingRights = game.getCastlingRights(playerColor.current);
     let king = game.get(castlingLocations[0]);
     let kingsideRook = game.get(castlingLocations[2]);
@@ -516,6 +523,7 @@ export default function ReactChessboard() {
     console.log("Has Queenside Rook Moved? " + queensideRookMovedFromStart.current);
     let kingMoved = kingMovedFromStart.current || king === false || king.type !== 'k';
 
+    //if the king is in check, we automatically know that castling is unavailable
     if (game.inCheck() || kingMoved) {
       castlingRights.k = false;
       castlingRights.q = false;
@@ -543,6 +551,7 @@ export default function ReactChessboard() {
     console.log(castlingRights);
     setIsQueensideCastleAvailable(castlingRights.q);
     setIsKingsideCastleAvailable(castlingRights.k);
+    initButtons(true);
     game.setCastlingRights(playerColor.current, castlingRights);
   }
 
@@ -551,23 +560,32 @@ export default function ReactChessboard() {
     console.log("Checking path:");
     console.log(path);
     let clearPath = true;
+    let playerColorIndex = getPlayerColorIndex();
     for (let square of path) {
 
       console.log("Square " + square);
       //need to shore up logic for attacking detection, think this is wrong anyway
       console.log("Piece on Square " + JSON.stringify(game.get(square)));
       console.log(square + " is false?");
-
-
       console.log(game.get(square));
-
       console.log(square + " is attacked?");
       console.log(game.isAttacked(square, opposingColor));
-      if (game.get(square) || game.isAttacked(square, opposingColor)) {
+
+      //TODO: correct for queenside logic, where there can be a square under attack (b1, b8)
+      if (game.get(square)) {
+        //if the square is occupied, we cannot castle
+        clearPath = false;
+        console.log("breaking, no castle");
+        break;
+      } else if (square !== queensideAttackableCastlingSquare[playerColorIndex] && game.isAttacked(square, opposingColor)) {
+        //if the square is being attacked AND is a square that the king has to cross in order for the castle to occur,
+        //we also cannot castle
+
         clearPath = false;
         console.log("breaking, no castle");
         break;
       }
+
     }
     return clearPath;
   }
