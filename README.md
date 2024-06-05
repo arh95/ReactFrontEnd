@@ -1,3 +1,5 @@
+6/5/24 NOTE: Had to stop servers to save money, so app will not be available at all times. If you'd like to see the app deployed to production, feel free to reach out and i can spin things up for you
+
 This front end is currently accessible at http://stormy-sierra-42002-d9e5225323a3.herokuapp.com/ <br/>
 Unfortuantely, I am still waiting on AWS to approve my domain registration request which is needed before I can install SSL, so the app can currently ONLY be accessed using the http protocol.<br/> **I reccomend accessing the site through Firefox, with https-only mode disabled (https://support.mozilla.org/en-US/kb/https-only-prefs)** 
 <br/><br/>
