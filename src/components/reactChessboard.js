@@ -6,6 +6,7 @@ import ReactButton from './reactButton.js';
 import { poll } from '../service/pollService.js';
 import './reactChessboard.css';
 import NumberInputModal from './modals/numberInputModal.js';
+import Info from '@mui/icons-material/Info';
 const { Chess } = require('chess.js');
 
 
@@ -34,9 +35,7 @@ export default function ReactChessboard() {
     <ReactButton id="spectate-game-button" visible={initGameButtonsVisible} onClick={promptUserToSpectate} label="Spectate Game" variant='outlined' />
   ];
   const [inGameButtons, setInGameButtons] = useState(initGameButtons);
-
-  const [isQueensideCastleAvailable, setIsQueensideCastleAvailable] = useState(false);
-  const [isKingsideCastleAvailable, setIsKingsideCastleAvailable] = useState(false);
+  const [castlingButtons, setCastlingButtons] = useState([]);
 
   const queensideRookMovedFromStart = useRef(false);
   const kingsideRookMovedFromStart = useRef(false);
@@ -85,7 +84,6 @@ export default function ReactChessboard() {
 
   function initButtons(isGameLive) {
     console.log("button init");
-    debugger;
     let buttonComponents = [];
     if (isGameLive) {
       //if game is live, buttons we want are: king/queenside castle, end game IF user is playing, ELSE only display end spectate button
@@ -94,11 +92,6 @@ export default function ReactChessboard() {
         buttonComponents.push(<ReactButton id="end-game-button" onClick={endSpectate} label="Leave Spectator Mode" variant='contained' />);
       } else {
         console.log("providing player controls");
-        buttonComponents.push(
-          <div className='castling-buttons'>
-            <ReactButton id="castle-button" onClick={doCastle(true)} disabled={isQueensideCastleAvailable} label="Queenside Castle" variant='outlined' />
-            <ReactButton id="castle-button" onClick={doCastle(false)} disabled={isKingsideCastleAvailable} label="Kingside Castle" variant='outlined' />
-          </div>);
         buttonComponents.push(<ReactButton id="end-game-button" onClick={quitGame} label="End Game" variant='contained' />);
       }
     } else {
@@ -204,6 +197,7 @@ export default function ReactChessboard() {
     setBoardPosition("");
     setGamePosition("");
     setPlayerPromptText("");
+    setCastlingButtons([]);
     isSpectating.current = false;
     updateControlButtonVisibility(false);
     setEndSpectateButtonVisible(false);
@@ -345,7 +339,9 @@ export default function ReactChessboard() {
 
   //returns boolean value -> true indicates piece move is allowable, false indicates it should return to its original position
   function attemptMovePiece(sourceSquare, targetSquare, piece) {
-
+    console.log("Source: " + sourceSquare);
+    console.log("Target: " + targetSquare);
+    console.log("Piece: " + piece);
 
     const move = {
       from: sourceSquare, to: targetSquare
@@ -357,9 +353,9 @@ export default function ReactChessboard() {
       console.log("promoting to Queen");
       move.promotion = 'q';
     }
-    
-    const moves = game.moves();
 
+    const moves = game.moves();
+    
     try {
 
       var attemptedMove = game.move(move);
@@ -506,6 +502,7 @@ export default function ReactChessboard() {
     return playerColor.current === WHITE ? 0 : 1;
   }
 
+  //perform examination of state to see what, if any, castling rights are available to the current player
   function setCastlingRights() {
     let playerColorIndex = getPlayerColorIndex();
     let attackingColor = playerColor.current === WHITE ? BLACK : WHITE;
@@ -531,6 +528,11 @@ export default function ReactChessboard() {
         kingMovedFromStart.current = true;
       }
     } else {
+      // below logic checks are as follows:
+      //if the rook has moved from its starting position (meaning the flag has been updated, the piece returned by game.get() is no piece,
+      //or if the piece returned is not a rook)
+      
+      //TODO: if opponent rook takes the rook, how does that flow through this gate? may need a color indicator as well
       if (kingsideRookMovedFromStart.current || kingsideRook === false || kingsideRook.type !== 'r') {
         castlingRights.k = false;
         kingsideRookMovedFromStart.current = true;
@@ -549,11 +551,23 @@ export default function ReactChessboard() {
 
     }
     console.log(castlingRights);
-    setIsQueensideCastleAvailable(castlingRights.q);
-    setIsKingsideCastleAvailable(castlingRights.k);
-    initButtons(true);
+  
+    //need to recreate castling buttons to have  updated knowledge about current castling rights
+    //TODO: fix bugs with castling buttons OR implement some instructions section explaining how app works
+    // reInitCastlingButtons(castlingRights.q, castlingRights.k);
     game.setCastlingRights(playerColor.current, castlingRights);
   }
+
+  // function reInitCastlingButtons(queensideFlag, kingsideFlag) {
+  //   console.log("updating castling buttons based on state after current turn");
+  //   let castlingButtonsNew = [];
+  //   castlingButtonsNew.push(
+  //     <div className='castling-buttons'>
+  //       <ReactButton id="castle-button" onClick={doCastle(true)} disabled={queensideFlag} label="Queenside Castle" variant='outlined' />
+  //       <ReactButton id="castle-button" onClick={doCastle(false)} disabled={kingsideFlag} label="Kingside Castle" variant='outlined' />
+  //     </div>);
+  //   setCastlingButtons(castlingButtonsNew);
+  // }
 
 
   function isCastlingPathClear(opposingColor, path) {
@@ -644,7 +658,10 @@ export default function ReactChessboard() {
 
   return (
     <div className='react-chessboard'>
+
+
       <div className="game-area">
+      <h2>React Chess</h2>
         <Chessboard id="myBoard" position={gamePosition} onPieceDragBegin={onPieceDragBegin} onPieceDrop={attemptMovePiece} boardWidth="400" autoPromoteToQueen={true}
           arePiecesDraggable={dragEnabled} boardOrientation={boardPosition} isDraggablePiece={isDraggablePiece} />
         <p>
@@ -652,6 +669,10 @@ export default function ReactChessboard() {
         </p>
       </div>
       <div className='button-container'>
+        {castlingButtons.map((cmp, i) => {
+          return (cmp);
+        })
+        }
         {inGameButtons.map((cmp, i) => {
           return (cmp);
         })}
